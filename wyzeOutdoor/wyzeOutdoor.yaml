@@ -28,19 +28,20 @@ wifi:
    ssid: "wyzeOutdoor Fallback"
    password: !secret fallback_hotspot_pass
 captive_portal:
-
 dashboard_import:
   package_import_url: github://Photonicsguy/ESPhome-projects/wyzeOutdoor/wyzeOutdoor.yaml@main
   import_full_config: True
+time:
+  - platform: homeassistant
+    id: hass_time
+preferences:
+  flash_write_interval: 90min
 
 #esp32_ble_tracker:
 #  scan_parameters:
 #    active: true
 bluetooth_proxy:
   active: true
-
-preferences:
-  flash_write_interval: 90min
 
 text_sensor:
   - platform: wifi_info
@@ -49,14 +50,10 @@ text_sensor:
       entity_category: "diagnostic"
       disabled_by_default: true
 substitutions:
-  # Higher value gives lower watt readout
-  current_res: "0.001"
-  # Lower value gives lower voltage readout
-  voltage_div: "770"
-
-time:
-  - platform: homeassistant
-    id: hass_time
+  # Calibration
+  voltage_div: 684.00
+  current_res: 0.002400
+  current_multiply: 1.7600
 
 #status_led:
 #  pin:
@@ -166,31 +163,38 @@ sensor:
       name: "Current"
       unit_of_measurement: A
       accuracy_decimals: 2
+      filters:
+        - multiply: ${current_multiply}
+        - round: 2
     voltage:
       name: "Voltage"
       unit_of_measurement: V
       accuracy_decimals: 1
+      filters:
+        - round: 1
     power:
       name: "Power"
       id: my_power
       unit_of_measurement: W
       accuracy_decimals: 0
       filters:
-        - calibrate_linear:
-            - 0.0 -> 0.0
-            - 134 -> 58
+        - round: 1
     energy:
       name: "Energy"
-  - platform: total_daily_energy
-    name: 'Daily Energy'
-    power_id: my_power
-    unit_of_measurement: 'kWh'
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
+  - platform: template
+    name: "Power Factor"
+    state_class: "measurement" 
+    lambda: |-
+      if(id(current).state<0.0001)
+      return 1.0;
+      else return id(power).state / (id(voltage).state * id(current).state);
+    accuracy_decimals: 2
     filters:
-      # Multiplication factor from W to kW is 0.001
-      - multiply: 0.001
+      - round: 2
+      - clamp:
+          min_value: 0
+          max_value: 1
+          ignore_out_of_range: false
 
 
 binary_sensor:
