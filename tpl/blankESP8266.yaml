@@ -12,17 +12,17 @@ logger:
   baud_rate: 0
 
 api:
-#  encryption:
-#    key: ""
-
+  #encryption:
+  #  key: !secret enc_key
 ota:
-  - platform: esphome
-#    password: ""
+  platform: esphome
+  #password: !secret ota_password
+
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   domain: !secret wifi_domain
-#  min_auth_mode: WPA2
+  min_auth_mode: WPA2
   ap:
     ssid: "blank ESP8266 Fallback"
     password: "12345678"
